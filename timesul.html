@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSul | Gestão de Tempo para Contabilidade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #0a2540;
+            --primary-light: #1a3a5f;
+            --secondary: #00b4d8;
+            --success: #06d6a0;
+            --danger: #ef476f;
+            --warning: #ffd166;
+            --gray: #6c757d;
+            --gray-light: #e9ecef;
+            --white: #ffffff;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+        body { font-family: 'Inter', sans-serif; background: #f5f7fa; min-height: 100vh; }
+        .header { background: var(--white); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 42px; height: 42px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; }
+        .logo h1 { font-size: 22px; color: var(--primary); }
+        .logo p { font-size: 10px; color: var(--gray); }
+        .user-info { display: flex; align-items: center; gap: 20px; }
+        .user-name { font-weight: 600; color: var(--primary); }
+        .logout-btn { background: var(--danger); color: white; border: none; padding: 8px 18px; border-radius: 10px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .nav-tabs { background: var(--white); padding: 0 30px; display: flex; gap: 5px; border-bottom: 1px solid var(--gray-light); position: sticky; top: 73px; z-index: 99; }
+        .nav-tab { padding: 15px 28px; cursor: pointer; border: none; background: none; font-weight: 600; font-size: 15px; color: var(--gray); transition: all 0.2s; display: flex; align-items: center; gap: 10px; border-bottom: 3px solid transparent; }
+        .nav-tab:hover { color: var(--secondary); }
+        .nav-tab.active { color: var(--primary); border-bottom-color: var(--secondary); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+        .stats-row { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .stat-card { background: var(--white); border-radius: 18px; padding: 20px 25px; flex: 1; min-width: 160px; box-shadow: var(--shadow); transition: all 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+        .stat-value { font-size: 32px; font-weight: 800; color: var(--primary); }
+        .stat-label { color: var(--gray); font-size: 13px; margin-top: 5px; }
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .calendar-card { background: var(--white); border-radius: 24px; padding: 25px; box-shadow: var(--shadow); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: var(--primary); }
+        .btn-outline { background: transparent; border: 1px solid var(--gray-light); color: var(--gray); }
+        .btn-warning { background: var(--warning); color: var(--primary); }
+        .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+        .week-day { text-align: center; font-weight: 600; padding: 12px; background: var(--gray-light); border-radius: 12px; font-size: 13px; color: var(--primary); }
+        .calendar-day { min-height: 120px; background: #fafbfc; border-radius: 14px; padding: 10px; cursor: pointer; transition: all 0.2s; border: 1px solid #eee; }
+        .calendar-day:hover { background: rgba(0, 180, 216, 0.05); transform: scale(1.02); border-color: var(--secondary); }
+        .day-number { font-weight: 700; color: var(--primary); margin-bottom: 10px; font-size: 14px; }
+        .task-item-cal { font-size: 11px; padding: 5px 8px; border-radius: 8px; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .task-manual { background: rgba(0, 180, 216, 0.1); }
+        .task-classroom { background: rgba(255, 209, 102, 0.15); border-left: 3px solid var(--warning); }
+        .task-completed { text-decoration: line-through; opacity: 0.6; }
+        .tasks-card { background: var(--white); border-radius: 24px; padding: 25px; box-shadow: var(--shadow); }
+        .filters { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+        .filter-select { padding: 10px 15px; border: 1px solid var(--gray-light); border-radius: 12px; font-family: inherit; background: white; }
+        .tasks-list { max-height: 500px; overflow-y: auto; }
+        .task-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--gray-light); transition: all 0.2s; flex-wrap: wrap; gap: 10px; }
+        .task-row:hover { background: #f8f9fa; }
+        .task-info { display: flex; align-items: center; gap: 15px; flex: 1; min-width: 200px; }
+        .task-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .task-checkbox.disabled { border-color: var(--gray); cursor: not-allowed; opacity: 0.5; }
+        .task-checkbox.completed { background: var(--success); border-color: var(--success); }
+        .task-title.completed { text-decoration: line-through; color: var(--gray); }
+        .priority-badge { font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+        .priority-high { background: #fee2e2; color: var(--danger); }
+        .priority-medium { background: #fff3e0; color: #fb8b67; }
+        .priority-low { background: #e0f7fa; color: var(--success); }
+        .source-badge { font-size: 10px; padding: 3px 8px; border-radius: 12px; }
+        .source-manual { background: var(--secondary); color: white; }
+        .source-classroom { background: var(--warning); color: var(--primary); }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; }
+        .dashboard-card { background: var(--white); border-radius: 24px; padding: 25px; box-shadow: var(--shadow); }
+        .chart-container { height: 250px; margin-top: 15px; }
+        .insight-item { padding: 12px; background: var(--gray-light); border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+        .progress-card { background: var(--white); border-radius: 24px; padding: 25px; box-shadow: var(--shadow); margin-bottom: 25px; }
+        .xp-circle { text-align: center; padding: 30px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 20px; color: white; }
+        .xp-value { font-size: 48px; font-weight: 800; }
+        .medals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-top: 20px; }
+        .medal-card { text-align: center; padding: 20px; background: var(--gray-light); border-radius: 20px; }
+        .medal-card.achieved { background: linear-gradient(135deg, #ffd700, #ffed4e); }
+        .medal-icon { font-size: 40px; margin-bottom: 10px; }
+        .progress-bar { background: var(--gray-light); border-radius: 20px; height: 12px; overflow: hidden; margin: 20px 0; }
+        .progress-fill { background: linear-gradient(90deg, var(--success), var(--secondary)); height: 100%; width: 0%; transition: width 0.5s; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--white); padding: 30px; border-radius: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal-content input, .modal-content select, .modal-content textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--gray-light); border-radius: 12px; }
+        .detail-row { margin: 15px 0; padding: 10px; background: var(--gray-light); border-radius: 12px; }
+        .detail-label { font-weight: 600; color: var(--primary); font-size: 12px; margin-bottom: 4px; }
+        .detail-value { font-size: 14px; }
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
+        .login-card { background: white; padding: 50px; border-radius: 32px; text-align: center; max-width: 400px; width: 90%; }
+        @media (max-width: 900px) { .container { padding: 20px; } .stats-row { flex-direction: column; } .dashboard-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="logo-icon" style="margin: 0 auto 20px; width: 70px; height: 70px; font-size: 32px;">⏰</div>
+            <h1 style="color: var(--primary);">TimeSul</h1>
+            <p style="color: var(--gray); margin: 15px 0;">Gestão de tempo inteligente para Contabilidade</p>
+            <div id="googleButton"></div>
+        </div>
+    </div>
+
+    <div id="appScreen" style="display: none;">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">⏰</div>
+                <div><h1>TimeSul</h1><p>by Contabilidade Pro</p></div>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="userName"></span>
+                <button class="logout-btn" onclick="signOut()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchPage('calendar')"><i class="fas fa-calendar-alt"></i> Calendário</button>
+            <button class="nav-tab" onclick="switchPage('tasks')"><i class="fas fa-tasks"></i> Tarefas</button>
+            <button class="nav-tab" onclick="switchPage('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+            <button class="nav-tab" onclick="switchPage('progress')"><i class="fas fa-trophy"></i> Progresso</button>
+        </div>
+
+        <div class="container">
+            <div class="stats-row">
+                <div class="stat-card"><div class="stat-value" id="totalTasks">0</div><div class="stat-label">Total de Tarefas</div></div>
+                <div class="stat-card"><div class="stat-value" id="completedTasks">0</div><div class="stat-label">Concluídas</div></div>
+                <div class="stat-card"><div class="stat-value" id="pendingTasks">0</div><div class="stat-label">Pendentes</div></div>
+                <div class="stat-card"><div class="stat-value" id="xpPoints">0</div><div class="stat-label">XP Total</div></div>
+            </div>
+
+            <div id="pageCalendar" class="page active">
+                <div class="calendar-card">
+                    <div class="calendar-header">
+                        <div class="calendar-title"><i class="fas fa-calendar-alt"></i> Calendário de Tarefas</div>
+                        <button class="btn btn-primary" onclick="openTaskModal()"><i class="fas fa-plus"></i> Nova Tarefa</button>
+                    </div>
+                    <div class="month-nav">
+                        <button class="btn btn-outline" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
+                        <h3 id="monthYear"></h3>
+                        <button class="btn btn-outline" onclick="changeMonth(1)">Próximo <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+            </div>
+
+            <div id="pageTasks" class="page">
+                <div class="tasks-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <h2><i class="fas fa-list-check"></i> Minhas Tarefas</h2>
+                        <button class="btn btn-primary" onclick="openTaskModal()"><i class="fas fa-plus"></i> Nova Tarefa Manual</button>
+                    </div>
+                    <div class="filters">
+                        <input type="text" id="searchTask" class="filter-select" placeholder="🔍 Buscar..." style="width: 200px;">
+                        <select id="filterPriority" class="filter-select">
+                            <option value="all">Todas prioridades</option>
+                            <option value="alta">Alta</option>
+                            <option value="media">Média</option>
+                            <option value="baixa">Baixa</option>
+                        </select>
+                        <select id="filterStatus" class="filter-select">
+                            <option value="all">Todos</option>
+                            <option value="pending">Pendentes</option>
+                            <option value="completed">Concluídas</option>
+                        </select>
+                        <select id="filterSource" class="filter-select">
+                            <option value="all">Todas origens</option>
+                            <option value="manual">Manuais</option>
+                            <option value="classroom">Classroom</option>
+                        </select>
+                    </div>
+                    <div id="allTasksList" class="tasks-list"></div>
+                </div>
+            </div>
+
+            <div id="pageDashboard" class="page">
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3><i class="fab fa-google"></i> Google Classroom</h3>
+                        <button id="classroomImportBtn" class="btn btn-success" style="width: 100%; margin: 15px 0;" onclick="importFromClassroom()">
+                            <i class="fab fa-google"></i> Atualizar do Classroom
+                        </button>
+                        <button id="syncClassroomBtn" class="btn btn-warning" style="width: 100%; margin-bottom: 15px;" onclick="syncClassroomTasks()">
+                            <i class="fas fa-sync-alt"></i> Sincronizar (remover entregues)
+                        </button>
+                        <div id="classroomInfo" style="font-size: 13px; color: var(--gray); text-align: center;">
+                            Clique em "Atualizar" para buscar tarefas pendentes
+                        </div>
+                        <div id="classroomTasksPreview" style="margin-top: 15px; max-height: 300px; overflow-y: auto;"></div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-chart-pie"></i> Distribuição por Prioridade</h3>
+                        <div class="chart-container"><canvas id="priorityChart"></canvas></div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-chart-line"></i> Produtividade Semanal</h3>
+                        <div class="chart-container"><canvas id="weeklyChart"></canvas></div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-lightbulb"></i> Insights</h3>
+                        <div id="insightsList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pageProgress" class="page">
+                <div class="progress-card">
+                    <div class="xp-circle">
+                        <div>Seus Pontos de Foco</div>
+                        <div class="xp-value" id="xpValue">0</div>
+                    </div>
+                    <h3><i class="fas fa-medal"></i> Conquistas</h3>
+                    <div id="medalsContainer" class="medals-grid"></div>
+                </div>
+                <div class="progress-card">
+                    <h3><i class="fas fa-chart-simple"></i> Estatísticas</h3>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Taxa de Conclusão</span>
+                            <span id="completionRate">0%</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="completionBar"></div></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+                        <div style="text-align: center; padding: 15px; background: var(--gray-light); border-radius: 16px;">
+                            <div style="font-size: 28px; font-weight: 800;" id="streakCount">0</div>
+                            <div>Dias de Ofensiva</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: var(--gray-light); border-radius: 16px;">
+                            <div style="font-size: 28px; font-weight: 800;" id="medalsCount">0</div>
+                            <div>Medalhas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-plus-circle"></i> Nova Tarefa Manual</h3>
+            <input type="text" id="taskTitle" placeholder="Título">
+            <input type="date" id="taskDate">
+            <select id="taskPriority">
+                <option value="alta">🔴 Alta</option>
+                <option value="media">🟠 Média</option>
+                <option value="baixa">🟢 Baixa</option>
+            </select>
+            <input type="text" id="taskCourse" placeholder="Disciplina/Turma">
+            <textarea id="taskDesc" placeholder="Descrição" rows="3"></textarea>
+            <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="saveTask()">Salvar</button>
+                <button class="btn btn-outline" onclick="closeTaskModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="taskDetailModal" class="modal">
+        <div class="modal-content">
+            <h3 id="detailTitle"><i class="fas fa-info-circle"></i> Detalhes da Tarefa</h3>
+            <div id="detailContent"></div>
+            <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-outline" onclick="closeDetailModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script>
+        // ==================== CREDENCIAIS ====================
+        const CLIENT_ID = '413702289485-f0msdollcg22ilrli7tulmi6re3b1m5u.apps.googleusercontent.com';
+        
+        // ==================== VARIÁVEIS ====================
+        let accessToken = null;
+        let currentUser = null;
+        let tasks = [];
+        let xpPoints = 0;
+        let medals = [];
+        let streak = 0;
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let weeklyChart, priorityChart;
+        let loginCompleted = false;
+        
+        const medalsList = [
+            { id: 'first', name: 'Primeira Tarefa', icon: '🎯', requirement: 1 },
+            { id: 'bronze', name: '5 Tarefas', icon: '🥉', requirement: 5 },
+            { id: 'silver', name: '10 Tarefas', icon: '🥈', requirement: 10 },
+            { id: 'gold', name: '20 Tarefas', icon: '🥇', requirement: 20 }
+        ];
+        
+        // ==================== LOGIN ====================
+        function initializeGoogleLogin() {
+            if (loginCompleted) return;
+            google.accounts.id.initialize({ 
+                client_id: CLIENT_ID, 
+                callback: handleCredentialResponse,
+                auto_select: false
+            });
+            google.accounts.id.renderButton(document.getElementById("googleButton"), { 
+                theme: "outline", size: "large", width: 280 
+            });
+        }
+        
+        let isProcessingLogin = false;
+        
+        async function handleCredentialResponse(response) {
+            if (isProcessingLogin) return;
+            isProcessingLogin = true;
+            try {
+                const userData = parseJwt(response.credential);
+                currentUser = { name: userData.name, email: userData.email };
+                document.getElementById('userName').innerHTML = currentUser.name;
+                await requestClassroomAccess();
+            } catch (error) {
+                console.error("Erro no login:", error);
+            } finally {
+                isProcessingLogin = false;
+            }
+        }
+        
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        }
+        
+        async function requestClassroomAccess() {
+            const tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me.readonly',
+                callback: async (resp) => {
+                    if (resp.error) { alert("Erro: " + resp.error); return; }
+                    accessToken = resp.access_token;
+                    loadUserData();
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('appScreen').style.display = 'block';
+                    renderAll();
+                    checkStreak();
+                    loginCompleted = true;
+                }
+            });
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+        
+        // ==================== IMPORTAÇÃO DO CLASSROOM (CORRIGIDA) ====================
+        async function importFromClassroom() {
+            if (!accessToken) { alert("Faça login primeiro!"); return; }
+            
+            const btn = document.getElementById('classroomImportBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+            btn.disabled = true;
+            
+            try {
+                const coursesRes = await fetch('https://classroom.googleapis.com/v1/courses?pageSize=20', {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                });
+                const courses = (await coursesRes.json()).courses || [];
+                
+                if (courses.length === 0) {
+                    alert("Nenhuma turma encontrada.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                let importedCount = 0;
+                let assignmentsCount = 0;
+                let materialsCount = 0;
+                let classroomTasksList = [];
+                
+                // Criar Set com IDs já existentes (considerando TODAS as tarefas do Classroom)
+                const existingClassroomIds = new Set(
+                    tasks.filter(t => t.source === 'classroom' && t.classroomId)
+                         .map(t => String(t.classroomId))
+                );
+                
+                for (const course of courses) {
+                    const workRes = await fetch(`https://classroom.googleapis.com/v1/courses/${course.id}/courseWork?pageSize=30`, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    });
+                    const workData = await workRes.json();
+                    const coursework = workData.courseWork || [];
+                    
+                    for (const work of coursework) {
+                        // Verificar se tem data de entrega e não está deletado
+                        if (work.dueDate && work.title && work.state !== 'DELETED') {
+                            const dueDate = `${work.dueDate.year}-${String(work.dueDate.month).padStart(2, '0')}-${String(work.dueDate.day).padStart(2, '0')}`;
+                            
+                            // Verificação de duplicata
+                            if (existingClassroomIds.has(String(work.id))) {
+                                continue;
+                            }
+                            
+                            // Determinar prioridade baseada no TIPO da atividade (com fallback)
+                            let priority = "baixa";
+                            let workTypeText = "📌 Outro";
+                            let isDeliverable = false;
+                            const workType = work.workType || "UNKNOWN";
+                            
+                            switch (workType) {
+                                case "ASSIGNMENT":
+                                    workTypeText = "📝 Trabalho/Atividade";
+                                    priority = "alta";
+                                    isDeliverable = true;
+                                    assignmentsCount++;
+                                    break;
+                                case "SHORT_ANSWER_QUESTION":
+                                    workTypeText = "❓ Questão Discursiva";
+                                    priority = "alta";
+                                    isDeliverable = true;
+                                    assignmentsCount++;
+                                    break;
+                                case "MULTIPLE_CHOICE_QUESTION":
+                                    workTypeText = "🔘 Questionário";
+                                    priority = "alta";
+                                    isDeliverable = true;
+                                    assignmentsCount++;
+                                    break;
+                                case "MATERIAL":
+                                    workTypeText = "📖 Material de Leitura";
+                                    priority = "baixa";
+                                    isDeliverable = false;
+                                    materialsCount++;
+                                    break;
+                                default:
+                                    workTypeText = "📌 Outro";
+                                    priority = "media";
+                                    isDeliverable = false;
+                            }
+                            
+                            const newTask = {
+                                id: Date.now() + importedCount,
+                                classroomId: String(work.id),
+                                title: work.title,
+                                date: dueDate,
+                                priority: priority,
+                                workType: workType,
+                                workTypeLabel: workTypeText,
+                                description: work.description || "Sem descrição",
+                                course: course.name,
+                                courseId: course.id,
+                                maxPoints: work.maxPoints || 0,
+                                alternateLink: work.alternateLink || `https://classroom.google.com/c/${course.id}`,
+                                completed: false,
+                                source: "classroom",
+                                isDeliverable: isDeliverable,
+                                canComplete: false
+                            };
+                            tasks.push(newTask);
+                            existingClassroomIds.add(String(work.id));
+                            classroomTasksList.push(newTask);
+                            importedCount++;
+                        }
+                    }
+                }
+                
+                saveUserData();
+                renderAll();
+                
+                // Preview das tarefas importadas
+                const previewDiv = document.getElementById('classroomTasksPreview');
+                if (classroomTasksList.length > 0) {
+                    previewDiv.innerHTML = `
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <div style="background: #e8f5e9; padding: 12px; border-radius: 12px; margin-bottom: 15px;">
+                                <strong>📊 Resumo da importação:</strong><br>
+                                📝 Entregáveis: ${assignmentsCount}<br>
+                                📖 Materiais de leitura: ${materialsCount}<br>
+                                <small>✅ Total importado: ${importedCount} tarefas</small>
+                            </div>
+                            <h4 style="margin-bottom: 10px;">📋 Tarefas importadas agora:</h4>
+                            ${classroomTasksList.slice(0, 10).map(t => `
+                                <div style="padding: 14px; border-left: 4px solid ${t.isDeliverable ? '#ef476f' : '#ffd166'}; background: ${t.isDeliverable ? '#fff5f5' : '#fff9eb'}; border-radius: 12px; margin-bottom: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                                        <div style="flex: 1;">
+                                            <strong style="color: var(--primary);">${t.title.substring(0, 50)}</strong>
+                                            <div style="font-size: 12px; margin-top: 4px;">
+                                                <span style="font-size: 10px; padding: 2px 8px; border-radius: 12px; background: ${t.isDeliverable ? '#fee2e2' : '#fff3e0'}; color: ${t.isDeliverable ? '#ef476f' : '#fb8b67'}">
+                                                    ${t.workTypeLabel}
+                                                </span>
+                                                <span style="margin-left: 8px;">📚 ${t.course}</span>
+                                            </div>
+                                            <div style="font-size: 11px; color: var(--gray); margin-top: 6px;">
+                                                <i class="fas fa-align-left"></i> ${(t.description || "Sem descrição").substring(0, 80)}${t.description && t.description.length > 80 ? '...' : ''}
+                                            </div>
+                                            ${t.maxPoints > 0 ? `<div style="font-size: 11px; margin-top: 4px;">⭐ Pontuação: ${t.maxPoints} pontos</div>` : ''}
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 12px;">📅 ${t.date}</div>
+                                            <a href="${t.alternateLink}" target="_blank" style="font-size: 11px; color: var(--primary);"><i class="fas fa-external-link-alt"></i> Abrir</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${classroomTasksList.length > 10 ? `<p style="text-align: center; margin-top: 10px;">+ ${classroomTasksList.length - 10} tarefas</p>` : ''}
+                        </div>
+                    `;
+                } else {
+                    previewDiv.innerHTML = '<p style="text-align: center; padding: 40px;">✅ Nenhuma tarefa nova para importar!</p>';
+                }
+                
+                document.getElementById('classroomInfo').innerHTML = `
+                    <div style="background: #e8f5e9; padding: 12px; border-radius: 12px; margin-top: 10px;">
+                        <strong>✅ ${importedCount} novas tarefas importadas</strong><br>
+                        <small>📝 Entregáveis: ${assignmentsCount} | 📖 Leitura: ${materialsCount}</small>
+                        <br><small>🔄 Total no app: ${tasks.filter(t => t.source === 'classroom').length} tarefas do Classroom</small>
+                    </div>
+                `;
+                
+                if (importedCount > 0) {
+                    alert(`✅ ${importedCount} novas tarefas importadas!\n\n📝 Entregáveis: ${assignmentsCount}\n📖 Leitura/Material: ${materialsCount}`);
+                } else {
+                    alert("📭 Nenhuma tarefa nova para importar. Todas as atividades já estão no seu calendário!");
+                }
+                
+            } catch (error) {
+                console.error("Erro na importação:", error);
+                alert("Erro ao atualizar: " + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        // ==================== SINCRONIZAR (REMOVER ENTREGUES) ====================
+        async function syncClassroomTasks() {
+            if (!accessToken) { alert("Faça login primeiro!"); return; }
+            
+            const btn = document.getElementById('syncClassroomBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+            btn.disabled = true;
+            
+            try {
+                const classroomTasks = tasks.filter(t => t.source === 'classroom' && t.classroomId);
+                
+                if (classroomTasks.length === 0) {
+                    alert("Nenhuma tarefa do Classroom para sincronizar.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                let removedCount = 0;
+                let errorCount = 0;
+                
+                for (const task of classroomTasks) {
+                    try {
+                        // Tenta buscar a tarefa no Classroom para ver se ainda existe
+                        const workRes = await fetch(`https://classroom.googleapis.com/v1/courses/${task.courseId}/courseWork/${task.classroomId}`, {
+                            headers: { Authorization: `Bearer ${accessToken}` }
+                        });
+                        
+                        if (workRes.status === 404) {
+                            // Tarefa não existe mais, remover
+                            tasks = tasks.filter(t => t.id !== task.id);
+                            removedCount++;
+                        }
+                    } catch (e) {
+                        errorCount++;
+                    }
+                }
+                
+                if (removedCount > 0) {
+                    saveUserData();
+                    renderAll();
+                    alert(`🔄 ${removedCount} tarefa(s) removida(s) (já entregues ou expiradas)`);
+                } else {
+                    alert("✅ Nenhuma tarefa removida. Todas ainda estão pendentes!");
+                }
+                
+                if (errorCount > 0) {
+                    console.log(`${errorCount} erros durante a sincronização`);
+                }
+                
+            } catch (error) {
+                console.error("Erro na sincronização:", error);
+                alert("Erro na sincronização: " + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        // ==================== PERSISTÊNCIA ====================
+        function saveUserData() {
+            if (currentUser) {
+                localStorage.setItem(`timesul_${currentUser.email}`, JSON.stringify({ tasks, xpPoints, medals, streak }));
+            }
+        }
+        
+        function loadUserData() {
+            if (!currentUser) return;
+            const saved = localStorage.getItem(`timesul_${currentUser.email}`);
+            if (saved) {
+                const data = JSON.parse(saved);
+                tasks = data.tasks || [];
+                xpPoints = data.xpPoints || 0;
+                medals = data.medals || [];
+                streak = data.streak || 0;
+            } else {
+                tasks = [];
+                xpPoints = 0;
+                medals = [];
+                streak = 0;
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tasks = [
+                    { id: 1, title: "Entregar trabalho de Contabilidade", date: today.toISOString().split('T')[0], priority: "alta", description: "Trabalho sobre CPC 26", course: "Contabilidade Avançada", completed: false, source: "manual", canComplete: true },
+                    { id: 2, title: "Estudar para prova", date: tomorrow.toISOString().split('T')[0], priority: "media", description: "Capítulos 5 a 8", course: "Contabilidade Tributária", completed: false, source: "manual", canComplete: true }
+                ];
+            }
+            updateXPAndMedals();
+        }
+        
+        function updateXPAndMedals() {
+            const completedCount = tasks.filter(t => t.completed && t.source === 'manual').length;
+            xpPoints = completedCount * 10;
+            medalsList.forEach(medal => {
+                if (completedCount >= medal.requirement && !medals.includes(medal.id)) {
+                    medals.push(medal.id);
+                    xpPoints += 50;
+                }
+            });
+            saveUserData();
+        }
+        
+        function checkStreak() {
+            const lastDate = localStorage.getItem(`lastLogin_${currentUser?.email}`);
+            const today = new Date().toISOString().split('T')[0];
+            if (lastDate !== today) {
+                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                if (lastDate === yesterday) streak++;
+                else streak = 1;
+                localStorage.setItem(`lastLogin_${currentUser?.email}`, today);
+                saveUserData();
+            }
+        }
+        
+        // ==================== CALENDÁRIO ====================
+        function renderCalendar() {
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const startingDay = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            
+            document.getElementById('monthYear').innerHTML = `${monthNames[currentMonth]} ${currentYear}`;
+            
+            let html = '';
+            for (let i = 0; i < 7; i++) html += `<div class="week-day">${weekDays[i]}</div>`;
+            for (let i = 0; i < startingDay; i++) html += `<div class="calendar-day"></div>`;
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayTasks = tasks.filter(t => t.date === dateStr);
+                
+                html += `<div class="calendar-day" onclick="showTaskDetailsForDate('${dateStr}')">
+                            <div class="day-number">${day}</div>`;
+                dayTasks.slice(0, 3).forEach(task => {
+                    const sourceClass = task.source === 'manual' ? 'task-manual' : 'task-classroom';
+                    const completedClass = task.completed ? 'task-completed' : '';
+                    const displayTitle = task.title.length > 18 ? task.title.substring(0, 15) + '...' : task.title;
+                    html += `<div class="task-item-cal ${sourceClass} ${completedClass}">
+                                <span>${task.completed ? '✓' : '○'} ${displayTitle}</span>
+                                ${task.source === 'manual' && !task.completed ? `<i class="fas fa-check" style="font-size: 10px; cursor: pointer;" onclick="event.stopPropagation();toggleComplete(${task.id})"></i>` : ''}
+                            </div>`;
+                });
+                if (dayTasks.length > 3) html += `<div style="font-size: 10px; color: #999;">+${dayTasks.length - 3}</div>`;
+                html += `</div>`;
+            }
+            document.getElementById('calendarGrid').innerHTML = html;
+        }
+        
+        function showTaskDetailsForDate(dateStr) {
+            const dayTasks = tasks.filter(t => t.date === dateStr);
+            if (dayTasks.length === 0) {
+                openTaskModalWithDate(dateStr);
+                return;
+            }
+            
+            const modal = document.getElementById('taskDetailModal');
+            const content = document.getElementById('detailContent');
+            content.innerHTML = dayTasks.map(task => `
+                <div class="detail-row">
+                    <div class="detail-label">📌 Título</div>
+                    <div class="detail-value">${task.title}</div>
+                    <div class="detail-label">📚 Disciplina</div>
+                    <div class="detail-value">${task.course || 'Não especificada'}</div>
+                    <div class="detail-label">⚡ Prioridade</div>
+                    <div class="detail-value"><span class="priority-badge priority-${task.priority}">${task.priority}</span></div>
+                    <div class="detail-label">📅 Data</div>
+                    <div class="detail-value">${task.date}</div>
+                    <div class="detail-label">📝 Descrição</div>
+                    <div class="detail-value">${task.description || 'Sem descrição'}</div>
+                    <div class="detail-label">🏷️ Origem</div>
+                    <div class="detail-value">${task.source === 'classroom' ? '🎓 Google Classroom' : '✏️ Manual'}</div>
+                    ${task.source === 'classroom' ? `<div class="detail-label">📋 Tipo de Atividade</div><div class="detail-value">${task.workTypeLabel || 'Não especificado'}</div>` : ''}
+                    ${task.source === 'classroom' && task.alternateLink ? `<div class="detail-label"><i class="fas fa-link"></i> Link</div><div class="detail-value"><a href="${task.alternateLink}" target="_blank" style="color: var(--primary);">Abrir no Classroom →</a></div>` : ''}
+                </div>
+            `).join('');
+            
+            document.getElementById('detailTitle').innerHTML = `<i class="fas fa-calendar-day"></i> Tarefas de ${dateStr} (${dayTasks.length})`;
+            modal.style.display = 'flex';
+        }
+        
+        function closeDetailModal() { document.getElementById('taskDetailModal').style.display = 'none'; }
+        
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            renderCalendar();
+        }
+        
+        // ==================== TAREFAS ====================
+        function renderAllTasks() {
+            const search = document.getElementById('searchTask')?.value.toLowerCase() || '';
+            const priorityFilter = document.getElementById('filterPriority')?.value || 'all';
+            const statusFilter = document.getElementById('filterStatus')?.value || 'all';
+            const sourceFilter = document.getElementById('filterSource')?.value || 'all';
+            
+            let filtered = tasks.filter(t => {
+                const matchSearch = t.title.toLowerCase().includes(search) || (t.course || '').toLowerCase().includes(search);
+                const matchPriority = priorityFilter === 'all' || t.priority === priorityFilter;
+                const matchStatus = statusFilter === 'all' || (statusFilter === 'pending' && !t.completed) || (statusFilter === 'completed' && t.completed);
+                const matchSource = sourceFilter === 'all' || t.source === sourceFilter;
+                return matchSearch && matchPriority && matchStatus && matchSource;
+            });
+            
+            const container = document.getElementById('allTasksList');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px;">📭 Nenhuma tarefa encontrada</div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(task => `
+                <div class="task-row">
+                    <div class="task-info">
+                        <div class="task-checkbox ${task.completed ? 'completed' : ''} ${task.source === 'classroom' ? 'disabled' : ''}" 
+                             onclick="${task.source === 'manual' ? `toggleComplete(${task.id})` : ''}">
+                            ${task.completed ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                        <div>
+                            <div class="task-title ${task.completed ? 'completed' : ''}">${task.title.length > 40 ? task.title.substring(0, 37) + '...' : task.title}</div>
+                            <div style="font-size: 11px; color: var(--gray);">${task.course ? `📚 ${task.course}` : ''}</div>
+                        </div>
+                        <span class="priority-badge priority-${task.priority}">${task.priority === 'alta' ? '🔴 Alta' : (task.priority === 'media' ? '🟠 Média' : '🟢 Baixa')}</span>
+                        <span class="source-badge source-${task.source}">${task.source === 'classroom' ? '🎓 Classroom' : '✏️ Manual'}</span>
+                    </div>
+                    <div class="task-date">📅 ${task.date || 'Sem data'}</div>
+                    ${task.source === 'manual' ? `<i class="fas fa-trash" onclick="deleteTask(${task.id})" style="cursor: pointer; color: var(--gray);"></i>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed && t.source === 'manual').length;
+            const pending = tasks.filter(t => !t.completed).length;
+            const completionRate = total === 0 ? 0 : Math.round((completed / total) * 100);
+            
+            document.getElementById('totalTasks').innerText = total;
+            document.getElementById('completedTasks').innerText = completed;
+            document.getElementById('pendingTasks').innerText = pending;
+            document.getElementById('xpPoints').innerText = xpPoints;
+            document.getElementById('xpValue').innerText = xpPoints;
+            document.getElementById('completionRate').innerText = `${completionRate}%`;
+            document.getElementById('completionBar').style.width = `${completionRate}%`;
+            document.getElementById('streakCount').innerText = streak;
+            document.getElementById('medalsCount').innerText = medals.length;
+        }
+        
+        function renderMedals() {
+            const completedCount = tasks.filter(t => t.completed && t.source === 'manual').length;
+            const container = document.getElementById('medalsContainer');
+            container.innerHTML = medalsList.map(medal => {
+                const achieved = completedCount >= medal.requirement;
+                return `<div class="medal-card ${achieved ? 'achieved' : ''}">
+                            <div class="medal-icon">${medal.icon}</div>
+                            <div class="medal-name">${medal.name}</div>
+                            <div style="font-size: 11px;">${achieved ? '✓ Conquistada' : `${medal.requirement} tarefas`}</div>
+                        </div>`;
+            }).join('');
+        }
+        
+        function updateCharts() {
+            const priorityCounts = {
+                alta: tasks.filter(t => t.priority === 'alta').length,
+                media: tasks.filter(t => t.priority === 'media').length,
+                baixa: tasks.filter(t => t.priority === 'baixa').length
+            };
+            
+            const ctxPriority = document.getElementById('priorityChart')?.getContext('2d');
+            if (ctxPriority) {
+                if (priorityChart) priorityChart.destroy();
+                priorityChart = new Chart(ctxPriority, {
+                    type: 'doughnut',
+                    data: { labels: ['Alta Prioridade', 'Média Prioridade', 'Baixa Prioridade'], datasets: [{ data: [priorityCounts.alta, priorityCounts.media, priorityCounts.baixa], backgroundColor: ['#ef476f', '#ffd166', '#06d6a0'] }] }
+                });
+            }
+            
+            const weeklyData = [0,0,0,0,0,0,0];
+            tasks.forEach(t => {
+                if (t.completed && t.date) {
+                    const dayOfWeek = new Date(t.date).getDay();
+                    weeklyData[dayOfWeek === 0 ? 6 : dayOfWeek - 1]++;
+                }
+            });
+            
+            const ctxWeekly = document.getElementById('weeklyChart')?.getContext('2d');
+            if (ctxWeekly) {
+                if (weeklyChart) weeklyChart.destroy();
+                weeklyChart = new Chart(ctxWeekly, {
+                    type: 'line',
+                    data: { labels: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], datasets: [{ label: 'Tarefas Concluídas', data: weeklyData, borderColor: '#00b4d8', backgroundColor: 'rgba(0, 180, 216, 0.1)', tension: 0.4, fill: true }] }
+                });
+            }
+            
+            const manualTasks = tasks.filter(t => t.source === 'manual');
+            const completedManual = manualTasks.filter(t => t.completed).length;
+            const insights = document.getElementById('insightsList');
+            insights.innerHTML = `
+                <div class="insight-item"><i class="fas fa-chart-line"></i> Taxa de conclusão de tarefas manuais: ${manualTasks.length === 0 ? 0 : Math.round((completedManual / manualTasks.length) * 100)}%</div>
+                <div class="insight-item"><i class="fas fa-tasks"></i> ${tasks.filter(t => !t.completed).length} tarefas pendentes no total</div>
+                <div class="insight-item"><i class="fas fa-fire"></i> Ofensiva de ${streak} dias consecutivos</div>
+                <div class="insight-item"><i class="fas fa-trophy"></i> ${medals.length} medalhas conquistadas</div>
+                <div class="insight-item"><i class="fab fa-google"></i> ${tasks.filter(t => t.source === 'classroom').length} tarefas do Google Classroom</div>
+                <div class="insight-item"><i class="fas fa-hand-peace"></i> ${tasks.filter(t => t.source === 'manual' && !t.completed).length} tarefas manuais pendentes</div>
+            `;
+        }
+        
+        function toggleComplete(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task && task.source === 'manual' && !task.completed) {
+                task.completed = true;
+                updateXPAndMedals();
+                saveUserData();
+                renderAll();
+            }
+        }
+        
+        function deleteTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task && task.source === 'manual') {
+                if (confirm("Excluir esta tarefa?")) {
+                    tasks = tasks.filter(t => t.id !== taskId);
+                    updateXPAndMedals();
+                    saveUserData();
+                    renderAll();
+                }
+            }
+        }
+        
+        // ==================== MODAL ====================
+        function openTaskModal() {
+            document.getElementById('taskDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskCourse').value = '';
+            document.getElementById('taskDesc').value = '';
+            document.getElementById('taskModal').style.display = 'flex';
+        }
+        
+        function openTaskModalWithDate(date) {
+            document.getElementById('taskDate').value = date;
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskCourse').value = '';
+            document.getElementById('taskDesc').value = '';
+            document.getElementById('taskModal').style.display = 'flex';
+        }
+        
+        function closeTaskModal() { document.getElementById('taskModal').style.display = 'none'; }
+        
+        function saveTask() {
+            const title = document.getElementById('taskTitle').value.trim();
+            const date = document.getElementById('taskDate').value;
+            const priority = document.getElementById('taskPriority').value;
+            const course = document.getElementById('taskCourse').value;
+            if (!title || !date) { alert("Preencha título e data!"); return; }
+            tasks.push({ 
+                id: Date.now(), 
+                title, 
+                date, 
+                priority, 
+                course, 
+                description: document.getElementById('taskDesc').value, 
+                completed: false, 
+                source: "manual",
+                canComplete: true
+            });
+            updateXPAndMedals();
+            saveUserData();
+            closeTaskModal();
+            renderAll();
+        }
+        
+        // ==================== NAVEGAÇÃO ====================
+        function switchPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page${page.charAt(0).toUpperCase() + page.slice(1)}`).classList.add('active');
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            if (event && event.target) {
+                event.target.closest('.nav-tab').classList.add('active');
+            }
+            if (page === 'tasks') renderAllTasks();
+            if (page === 'progress') renderMedals();
+            if (page === 'dashboard') updateCharts();
+        }
+        
+        function renderAll() {
+            renderCalendar();
+            renderAllTasks();
+            updateStats();
+            renderMedals();
+            updateCharts();
+        }
+        
+        function signOut() {
+            google.accounts.id.disableAutoSelect();
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('appScreen').style.display = 'none';
+            currentUser = null;
+            loginCompleted = false;
+        }
+        
+        // Event listeners
+        document.getElementById('searchTask')?.addEventListener('input', () => renderAllTasks());
+        document.getElementById('filterPriority')?.addEventListener('change', () => renderAllTasks());
+        document.getElementById('filterStatus')?.addEventListener('change', () => renderAllTasks());
+        document.getElementById('filterSource')?.addEventListener('change', () => renderAllTasks());
+        
+        window.onload = () => { initializeGoogleLogin(); };
+        
+        // Expor funções globalmente
+        window.switchPage = switchPage;
+        window.changeMonth = changeMonth;
+        window.openTaskModal = openTaskModal;
+        window.openTaskModalWithDate = openTaskModalWithDate;
+        window.closeTaskModal = closeTaskModal;
+        window.saveTask = saveTask;
+        window.toggleComplete = toggleComplete;
+        window.deleteTask = deleteTask;
+        window.importFromClassroom = importFromClassroom;
+        window.syncClassroomTasks = syncClassroomTasks;
+        window.signOut = signOut;
+        window.showTaskDetailsForDate = showTaskDetailsForDate;
+        window.closeDetailModal = closeDetailModal;
+    </script>
+</body>
+</html>
