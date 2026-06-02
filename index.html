@@ -101,7 +101,77 @@
         .detail-value { font-size: 14px; }
         .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
         .login-card { background: white; padding: 50px; border-radius: 32px; text-align: center; max-width: 400px; width: 90%; }
-        @media (max-width: 900px) { .container { padding: 20px; } .stats-row { flex-direction: column; } .dashboard-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) {
+            /* 1. Container e Grid de Status */
+            .container { 
+                padding: 15px; 
+                padding-bottom: 85px; /* Espaço para a barra inferior não cobrir o conteúdo */
+            }
+            .stats-row { 
+                display: grid; 
+                grid-template-columns: repeat(2, 1fr); /* Transforma em uma grade 2x2 */
+                gap: 15px; 
+            }
+            .dashboard-grid { grid-template-columns: 1fr; }
+
+            /* 2. Barra de Navegação Inferior (App-like) */
+            .nav-tabs {
+                position: fixed;
+                bottom: 0;
+                top: auto;
+                left: 0;
+                width: 100%;
+                padding: 0;
+                background: var(--white);
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+                justify-content: space-around;
+                z-index: 1000;
+            }
+            .nav-tab {
+                flex-direction: column;
+                padding: 10px 5px;
+                font-size: 11px;
+                gap: 4px;
+                border-bottom: none;
+                border-top: 3px solid transparent;
+                flex: 1;
+                text-align: center;
+            }
+            .nav-tab.active {
+                border-bottom-color: transparent;
+                border-top-color: var(--secondary);
+            }
+            .nav-tab i { font-size: 20px; }
+
+            /* 3. Cabeçalho Minimalista */
+            .header { padding: 15px 20px; }
+            .logo p, .user-name { display: none; } /* Oculta textos secundários para poupar espaço */
+            .logout-btn { padding: 8px 12px; font-size: 12px; }
+
+            /* 4. Ajustes do Calendário para 390px */
+            .calendar-card { padding: 15px; }
+            .calendar-header { flex-direction: column; align-items: stretch; gap: 10px; }
+            .calendar-header .btn { justify-content: center; }
+            .week-day { padding: 8px 2px; font-size: 11px; }
+            .calendar-day { min-height: 80px; padding: 4px; }
+            .day-number { font-size: 12px; margin-bottom: 2px; }
+            .task-item-cal { font-size: 9px; padding: 3px; flex-wrap: wrap; }
+            .task-item-cal span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+            /* 5. Ajustes de Tarefas e Filtros */
+            .tasks-card { padding: 15px; }
+            .filters { flex-direction: column; width: 100%; }
+            .filter-select { width: 100% !important; }
+            .task-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .task-info { width: 100%; }
+            .task-date { align-self: flex-start; font-size: 12px; padding-left: 37px; }
+
+            /* 6. Ajustes de Modais e Tela de Login */
+            .login-card { padding: 30px 20px; }
+            .modal-content { width: 95%; padding: 20px; }
+            .modal-buttons { flex-direction: column; }
+            .modal-buttons .btn { width: 100%; justify-content: center; }
+        }
     </style>
 </head>
 <body>
